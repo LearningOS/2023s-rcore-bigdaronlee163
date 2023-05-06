@@ -25,7 +25,7 @@ mod sbi;
 #[path = "boards/qemu.rs"]
 mod board;
 
-global_asm!(include_str!("entry.asm"));
+global_asm!(include_str!("entry.asm"));  // 配置栈空间 调用 rust_main 函数  
 
 /// clear BSS segment
 pub fn clear_bss() {
@@ -37,7 +37,7 @@ pub fn clear_bss() {
 }
 
 /// the rust entry-point of os
-#[no_mangle]
+#[no_mangle]  // rust_main 函数不进行改名操作。
 pub fn rust_main() -> ! {
     extern "C" {
         fn stext(); // begin addr of text segment
@@ -54,8 +54,9 @@ pub fn rust_main() -> ! {
     clear_bss();
     logging::init();
     println!("[kernel] Hello, world!");
+    // #x 为十六进制加上0x前缀。
     trace!(
-        "[kernel] .text [{:#x}, {:#x})",
+        "[kernel] .text [{:#x}, {:#x})",  
         stext as usize,
         etext as usize
     );
@@ -74,6 +75,7 @@ pub fn rust_main() -> ! {
     error!("[kernel] .bss [{:#x}, {:#x})", sbss as usize, ebss as usize);
 
     use crate::board::QEMUExit;
+    // QEMU_EXIT_HANDLE 这里为 RISCV64 结构体。 包含一些指定的配置。
     crate::board::QEMU_EXIT_HANDLE.exit_success(); // CI autotest success
                                                    //crate::board::QEMU_EXIT_HANDLE.exit_failure(); // CI autoest failed
 }
