@@ -3,6 +3,7 @@
 use log::{self, Level, LevelFilter, Log, Metadata, Record};
 
 /// a simple logger
+// 日志的具体实现。 实现log中提供的trait
 struct SimpleLogger;
 
 impl Log for SimpleLogger {
