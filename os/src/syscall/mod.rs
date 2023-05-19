@@ -12,13 +12,13 @@
 
 /// write syscall
 const SYSCALL_WRITE: usize = 64;
-/// exit syscall
+/// exit syscall  程序主动退出
 const SYSCALL_EXIT: usize = 93;
-/// yield syscall
+/// yield syscall 程序主动暂定
 const SYSCALL_YIELD: usize = 124;
-/// gettime syscall
+/// gettime syscall  获取时间
 const SYSCALL_GET_TIME: usize = 169;
-/// taskinfo syscall
+/// taskinfo syscall   获取任务信息
 const SYSCALL_TASK_INFO: usize = 410;
 
 mod fs;

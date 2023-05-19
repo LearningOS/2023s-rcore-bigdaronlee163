@@ -51,10 +51,13 @@ lazy_static! {
     /// Global variable: TASK_MANAGER
     pub static ref TASK_MANAGER: TaskManager = {
         let num_app = get_num_app();
+        // 构造一个变量。
         let mut tasks = [TaskControlBlock {
             task_cx: TaskContext::zero_init(),
             task_status: TaskStatus::UnInit,
         }; MAX_APP_NUM];
+        // init_app_cx 在 loader 子模块中定义，它向内核栈压入了一个 Trap 上下文，
+        // 并返回压入 Trap 上下文后 sp 的值。 这个 Trap 上下文的构造方式与第二章相同。
         for (i, task) in tasks.iter_mut().enumerate() {
             task.task_cx = TaskContext::goto_restore(init_app_cx(i));
             task.task_status = TaskStatus::Ready;
@@ -79,6 +82,7 @@ impl TaskManager {
     fn run_first_task(&self) -> ! {
         let mut inner = self.inner.exclusive_access();
         let task0 = &mut inner.tasks[0];
+        // 修改程序的状态。
         task0.task_status = TaskStatus::Running;
         let next_task_cx_ptr = &task0.task_cx as *const TaskContext;
         drop(inner);
@@ -108,8 +112,10 @@ impl TaskManager {
     ///
     /// In this case, we only return the first `Ready` task in task list.
     fn find_next_task(&self) -> Option<usize> {
+        // 独占式访问和使用。
         let inner = self.inner.exclusive_access();
         let current = inner.current_task;
+        // 寻找ready的程序。
         (current + 1..current + self.num_app + 1)
             .map(|id| id % self.num_app)
             .find(|id| inner.tasks[*id].task_status == TaskStatus::Ready)
@@ -125,6 +131,7 @@ impl TaskManager {
             inner.current_task = next;
             let current_task_cx_ptr = &mut inner.tasks[current].task_cx as *mut TaskContext;
             let next_task_cx_ptr = &inner.tasks[next].task_cx as *const TaskContext;
+            // 手动dtop 因为上面是获取的可变引用，也就是独占式的使用。
             drop(inner);
             // before this, we should drop local variables that must be dropped manually
             unsafe {

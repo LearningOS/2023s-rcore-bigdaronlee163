@@ -24,6 +24,8 @@ fn sbi_call(which: usize, arg0: usize, arg1: usize, arg2: usize) -> usize {
 }
 
 /// use sbi call to set timer
+/// sbi 子模块有一个 set_timer 调用，用来设置 mtimecmp 的值。
+/// 
 pub fn set_timer(timer: usize) {
     sbi_call(SBI_SET_TIMER, timer, 0, 0);
 }

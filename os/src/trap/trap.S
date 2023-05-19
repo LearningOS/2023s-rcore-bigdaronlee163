@@ -5,10 +5,10 @@
 .macro LOAD_GP n
     ld x\n, \n*8(sp)
 .endm
-    .section .text
+    .section .text # 代码段
     .globl __alltraps
     .globl __restore
-    .align 2
+    .align 2 # 四字节对齐
 __alltraps:
     csrrw sp, sscratch, sp
     # now sp->kernel stack, sscratch->user stack
