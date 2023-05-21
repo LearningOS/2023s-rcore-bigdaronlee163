@@ -14,10 +14,10 @@ pub struct TaskControlBlock {
     /// Maintain the execution status of the current process
     pub task_status: TaskStatus,
 
-    /// Application address space
+    /// Application address space  逻辑段
     pub memory_set: MemorySet,
 
-    /// The phys page number of trap context
+    /// The phys page number of trap context  物理地址  trap的上下文
     pub trap_cx_ppn: PhysPageNum,
 
     /// The size(top addr) of program which is loaded from elf file

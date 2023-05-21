@@ -158,11 +158,21 @@ impl From<PhysPageNum> for PhysAddr {
 impl VirtPageNum {
     /// Get the indexes of the page table entry
     pub fn indexes(&self) -> [usize; 3] {
+        /*
+        页表的层级结构通常为3级，每个索引占据 9 位。
+        因此，在提取第一级索引值时，我们需要使用虚拟页号的低 9 位；
+        在提取第二级索引值时，我们需要使用虚拟页号的中间 9 位，即第 10 ~ 18 位；以此类推。
+        由于 9 位二进制数的最大值为 2^9-1=511，因此在提取每一级索引时，
+        我们可以通过对虚拟页号进行按位与运算，将低 9 位、中间 9 位、高 9 位分别提取出来，
+        并记录到 idx 数组中。这里的 511 在二进制中表示为 9 个二进制位全部为 1，
+        使用按位与运算后，会将除了低 9 位以外的所有位清零，从而得到低 9 位的值。
+
+                 */
         let mut vpn = self.0;
         let mut idx = [0usize; 3];
         for i in (0..3).rev() {
             idx[i] = vpn & 511;
-            vpn >>= 9;
+            vpn >>= 9; // 
         }
         idx
     }
@@ -179,10 +189,23 @@ impl PhysPageNum {
     /// Get the reference of page table(array of ptes)
     pub fn get_pte_array(&self) -> &'static mut [PageTableEntry] {
         let pa: PhysAddr = (*self).into();
+        /*
+        这里为什么是512的长度？
+        39 -12 = 27；
+        27 / 3 = 9
+        2 ^9^  = 512
+        每个页表项是一个长度为512的数组。数组中的保存的是下一级的页表项的地址。
+        这里的的地址是 64 位的usize的。
+         */
         unsafe { core::slice::from_raw_parts_mut(pa.0 as *mut PageTableEntry, 512) }
     }
     /// Get the reference of page(array of bytes)
+    ///
     pub fn get_bytes_array(&self) -> &'static mut [u8] {
+        /*
+           这里获取的是字节数组。也就是长度为4096的4KiB的页表项大小的数组。
+
+        */
         let pa: PhysAddr = (*self).into();
         unsafe { core::slice::from_raw_parts_mut(pa.0 as *mut u8, 4096) }
     }

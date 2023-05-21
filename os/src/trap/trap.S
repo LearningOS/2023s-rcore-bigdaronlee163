@@ -38,7 +38,9 @@ __alltraps:
     # move to kernel_sp
     ld sp, 35*8(sp)
     # switch to kernel space
+    # 切换地址空间。
     csrw satp, t0
+    # 清理快表。
     sfence.vma
     # jump to trap_handler
     jr t1

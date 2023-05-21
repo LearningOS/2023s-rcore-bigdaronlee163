@@ -23,13 +23,14 @@ bitflags! {
 #[repr(C)]
 /// page table entry structure
 pub struct PageTableEntry {
-    /// bits of page table entry
+    /// bits of page table entry 
     pub bits: usize,
 }
 
 impl PageTableEntry {
     /// Create a new page table entry
     pub fn new(ppn: PhysPageNum, flags: PTEFlags) -> Self {
+        // 将一个物理页表项拼接起来。
         PageTableEntry {
             bits: ppn.0 << 10 | flags.bits as usize,
         }
@@ -67,6 +68,8 @@ impl PageTableEntry {
 /// page table structure
 pub struct PageTable {
     root_ppn: PhysPageNum,
+    // 向量 frames 以 FrameTracker
+    // 的形式保存了页表所有的节点（包括根节点）所在的物理页帧。
     frames: Vec<FrameTracker>,
 }
 
@@ -89,15 +92,20 @@ impl PageTable {
     }
     /// Find PageTableEntry by VirtPageNum, create a frame for a 4KB page table if not exist
     fn find_pte_create(&mut self, vpn: VirtPageNum) -> Option<&mut PageTableEntry> {
+        /*
+            根据虚拟地址获取屋里地址。
+         */
         let idxs = vpn.indexes();
         let mut ppn = self.root_ppn;
         let mut result: Option<&mut PageTableEntry> = None;
         for (i, idx) in idxs.iter().enumerate() {
             let pte = &mut ppn.get_pte_array()[*idx];
+            // 返回结果。
             if i == 2 {
                 result = Some(pte);
                 break;
             }
+            // 如果不存在，重新分配。
             if !pte.is_valid() {
                 let frame = frame_alloc().unwrap();
                 *pte = PageTableEntry::new(frame.ppn, PTEFlags::V);
@@ -126,13 +134,16 @@ impl PageTable {
         result
     }
     /// set the map between virtual page number and physical page number
+    /// 通过虚拟地址找到物理地址。
     #[allow(unused)]
+    // 这里分开的目的，可以通过 flags 来判断物理地址的是否可以访问。
     pub fn map(&mut self, vpn: VirtPageNum, ppn: PhysPageNum, flags: PTEFlags) {
         let pte = self.find_pte_create(vpn).unwrap();
         assert!(!pte.is_valid(), "vpn {:?} is mapped before mapping", vpn);
         *pte = PageTableEntry::new(ppn, flags | PTEFlags::V);
     }
     /// remove the map between virtual page number and physical page number
+    /// 通过 unmap 方法来删除一个键值对，在调用时仅需给出作为索引的虚拟页号即可。
     #[allow(unused)]
     pub fn unmap(&mut self, vpn: VirtPageNum) {
         let pte = self.find_pte(vpn).unwrap();

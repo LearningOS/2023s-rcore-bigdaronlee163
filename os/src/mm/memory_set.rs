@@ -73,7 +73,9 @@ impl MemorySet {
     /// Mention that trampoline is not collected by areas.
     fn map_trampoline(&mut self) {
         self.page_table.map(
+            // TRAMPOLINE 地址空间的最高地址。
             VirtAddr::from(TRAMPOLINE).into(),
+            // 在汇编代码中定义的 strampoline 地址。
             PhysAddr::from(strampoline as usize).into(),
             PTEFlags::R | PTEFlags::X,
         );
@@ -152,7 +154,7 @@ impl MemorySet {
         // map program headers of elf, with U flag
         let elf = xmas_elf::ElfFile::new(elf_data).unwrap();
         let elf_header = elf.header;
-        let magic = elf_header.pt1.magic;
+        let magic = elf_header.pt1.magic; // 模数
         assert_eq!(magic, [0x7f, 0x45, 0x4c, 0x46], "invalid elf!");
         let ph_count = elf_header.pt2.ph_count();
         let mut max_end_vpn = VirtPageNum(0);
@@ -265,7 +267,12 @@ impl MemorySet {
 }
 /// map area structure, controls a contiguous piece of virtual memory
 pub struct MapArea {
+    /*
+
+
+    */
     vpn_range: VPNRange,
+    // 保存了虚拟地址到物理地址的映射
     data_frames: BTreeMap<VirtPageNum, FrameTracker>,
     map_type: MapType,
     map_perm: MapPermission,
@@ -287,6 +294,7 @@ impl MapArea {
             map_perm,
         }
     }
+    // 对逻辑段中的单个虚拟页面进行映射/解映射的方法 map_one 和 unmap_one
     pub fn map_one(&mut self, page_table: &mut PageTable, vpn: VirtPageNum) {
         let ppn: PhysPageNum;
         match self.map_type {
@@ -294,11 +302,16 @@ impl MapArea {
                 ppn = PhysPageNum(vpn.0);
             }
             MapType::Framed => {
+                // 分配具体的物理帧。
                 let frame = frame_alloc().unwrap();
                 ppn = frame.ppn;
                 self.data_frames.insert(vpn, frame);
             }
         }
+        /*
+        1. 这里将将逻辑地址和物理地址进行映射。
+
+         */
         let pte_flags = PTEFlags::from_bits(self.map_perm.bits).unwrap();
         page_table.map(vpn, ppn, pte_flags);
     }
@@ -343,11 +356,13 @@ impl MapArea {
         let len = data.len();
         loop {
             let src = &data[start..len.min(start + PAGE_SIZE)];
+            // 获取目的地址。
             let dst = &mut page_table
                 .translate(current_vpn)
                 .unwrap()
                 .ppn()
                 .get_bytes_array()[..src.len()];
+            // 将数据复制到指定的地址。
             dst.copy_from_slice(src);
             start += PAGE_SIZE;
             if start >= len {
